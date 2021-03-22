@@ -1,20 +1,28 @@
 package com.moon.dotimage
 
+import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.graphics.Color
 import android.graphics.Matrix
 import android.net.Uri
 import android.os.Bundle
+import android.util.Base64
 import android.util.Log
+import android.webkit.JavascriptInterface
 import androidx.appcompat.app.AppCompatActivity
 import com.moon.dotimage.databinding.ActivityMainBinding
-import kotlin.math.ceil
+import java.io.ByteArrayOutputStream
 
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
+
+    private var bitmap: Bitmap? = null
+
+    private var threshold = 127
+
+    private var width = 50
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -31,11 +39,42 @@ class MainActivity : AppCompatActivity() {
                 FILECHOOSER_RESULT_CODE
             )
         }
+
+        binding.webview.run {
+            loadUrl("file:///android_asset/dot.html")
+            settings.javaScriptEnabled = true
+            settings.domStorageEnabled = true
+            addJavascriptInterface(WebAppInterface(this@MainActivity), "Dot")
+        }
+    }
+
+    inner class WebAppInterface(private val context: Context) {
+        @JavascriptInterface
+        fun bitmapToBase64(): String {
+            //bitmap to base64
+            val byteArrayOutputStream = ByteArrayOutputStream()
+            //add support for jpg and more.
+            //add support for jpg and more.
+            bitmap!!.compress(Bitmap.CompressFormat.PNG, 50, byteArrayOutputStream)
+            val byteArray: ByteArray = byteArrayOutputStream.toByteArray()
+            Log.i("MQ!", "bitmapToBase64:$byteArray")
+            return Base64.encodeToString(byteArray, Base64.DEFAULT)
+        }
+
+        @JavascriptInterface
+        fun getThreshold(): Int {
+            return threshold
+        }
+
+        @JavascriptInterface
+        fun getWidth(): Int {
+            return width
+        }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        Log.i("MQ!", "resultCode:$resultCode, data:$data")
+        Log.i("MQ!", "resultCode:$requestCode, data:$data")
         if (data == null) {
             return
         }
@@ -45,7 +84,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun imageProcessing(data: Uri) {
-        var bitmap: Bitmap? = null
         try {
             val inputStream = contentResolver.openInputStream(data)
             bitmap = BitmapFactory.decodeStream(inputStream)
@@ -56,6 +94,7 @@ class MainActivity : AppCompatActivity() {
         }
         bitmap = rotate(bitmap!!, 90)
         binding.imageView.setImageBitmap(bitmap)
+        binding.webview.loadUrl("javascript:processing.get_bit_map()")
     }
 
     private fun rotate(bitmap: Bitmap, degrees: Int): Bitmap {
