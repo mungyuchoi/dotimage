@@ -10,6 +10,8 @@ import android.os.Bundle
 import android.util.Base64
 import android.util.Log
 import android.webkit.JavascriptInterface
+import android.webkit.WebView
+import android.webkit.WebViewClient
 import androidx.appcompat.app.AppCompatActivity
 import com.moon.dotimage.databinding.ActivityMainBinding
 import java.io.ByteArrayOutputStream
@@ -41,20 +43,22 @@ class MainActivity : AppCompatActivity() {
         }
 
         binding.webview.run {
-            loadUrl("file:///android_asset/dot.html")
             settings.javaScriptEnabled = true
             settings.domStorageEnabled = true
             addJavascriptInterface(WebAppInterface(this@MainActivity), "Dot")
+            loadUrl("file:///android_asset/dot.html")
+            webViewClient = object: WebViewClient() {
+                override fun onPageFinished(view: WebView?, url: String?) {
+                    Log.i("MQ!", "onPageFinished")
+                }
+            }
         }
     }
 
     inner class WebAppInterface(private val context: Context) {
         @JavascriptInterface
         fun bitmapToBase64(): String {
-            //bitmap to base64
             val byteArrayOutputStream = ByteArrayOutputStream()
-            //add support for jpg and more.
-            //add support for jpg and more.
             bitmap!!.compress(Bitmap.CompressFormat.PNG, 50, byteArrayOutputStream)
             val byteArray: ByteArray = byteArrayOutputStream.toByteArray()
             Log.i("MQ!", "bitmapToBase64:$byteArray")
@@ -69,6 +73,11 @@ class MainActivity : AppCompatActivity() {
         @JavascriptInterface
         fun getWidth(): Int {
             return width
+        }
+
+        @JavascriptInterface
+        fun getDoubleNum(num: Int) {
+            Log.i("MQ!", "getDoubleNum : $num")
         }
     }
 
@@ -94,7 +103,7 @@ class MainActivity : AppCompatActivity() {
         }
         bitmap = rotate(bitmap!!, 90)
         binding.imageView.setImageBitmap(bitmap)
-        binding.webview.loadUrl("javascript:processing.get_bit_map()")
+        binding.webview.loadUrl("javascript:getBitmap()")
     }
 
     private fun rotate(bitmap: Bitmap, degrees: Int): Bitmap {
