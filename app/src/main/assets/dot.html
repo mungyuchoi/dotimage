@@ -14,6 +14,7 @@ const asciiXDots = 2, asciiYDots = 4;
 let threshold = 127, asciiWidth = 100, asciiHeight;
 let image;
 var base64;
+let file;
 
     function getDoubleNum() {
         Dot.getDoubleNum(3)
@@ -21,8 +22,13 @@ var base64;
 
     function getBitmap() {
         base64 = Dot.bitmapToBase64()
+        fetch('data:image/png;' + base64)
+          .then(res => res.blob())
+          .then(blob => {
+            file = new File([blob], "hello",{ type: "image/png" })
+          })
+        console.log("file: " + file);
     }
-
 </script>
 </body>
 </html>
